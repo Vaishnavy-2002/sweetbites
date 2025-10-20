@@ -136,18 +136,22 @@ logs
 # Temporary files
 tmp/
 temp/
-backend/
+
+# Backend specific ignores
+backend/__pycache__/
+backend/*/__pycache__/
+backend/*/migrations/__pycache__/
+backend/db.sqlite3
+backend/media/
+backend/staticfiles/
+backend/venv/
+backend/new_venv/
+backend/.env
+backend/.env.local
+backend/.env.production
 # Package lock files (optional - you might want to keep these)
 # package-lock.json
 # yarn.lock
-
-# Railway deployment files
-railway.toml
-railway.env.example
-
-# Other deployment files
-Procfile
-nixpacks.toml
 
 # Test files
 test_*.html

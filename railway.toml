@@ -1,0 +1,15 @@
+[build]
+builder = "nixpacks"
+
+[deploy]
+startCommand = "gunicorn sweetbite_backend.wsgi:application --bind 0.0.0.0:$PORT"
+healthcheckPath = "/admin/"
+healthcheckTimeout = 300
+restartPolicyType = "on_failure"
+
+[environments.production]
+variables = { DJANGO_SETTINGS_MODULE = "sweetbite_backend.settings.production" }
+
+[environments.staging]
+variables = { DJANGO_SETTINGS_MODULE = "sweetbite_backend.settings.staging" }
+
