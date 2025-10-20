@@ -55,7 +55,7 @@ const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState('overview');
   const [lastRefresh, setLastRefresh] = useState(new Date());
   const [autoRefresh, setAutoRefresh] = useState(true);
-  // Reports date range (visible in Admin page like Inventory)
+  // Reports date range 
   const [reportDateRange, setReportDateRange] = useState({
     startDate: new Date(new Date().setMonth(new Date().getMonth() - 1)).toISOString().split('T')[0],
     endDate: new Date().toISOString().split('T')[0]
