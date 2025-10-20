@@ -3,7 +3,7 @@ import { Map, Marker, Popup } from 'react-map-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { MapPinIcon, TruckIcon, ClockIcon } from '@heroicons/react/24/outline';
 
-const MAPBOX_TOKEN = 'pk.eyJ1IjoiZ2FheWE5OSIsImEiOiJjbWZxY2U3bWcwcHM0MmluNTkxaHEzcDd1In0.nlgLV43KSw1e_AgyBVFuMQ';
+const MAPBOX_TOKEN = process.env.REACT_APP_MAPBOX_TOKEN || 'pk.eyJ1IjoiZ2FheWE5OSIsImEiOiJjbWZxY2U3bWcwcHM0MmluNTkxaHEzcDd1In0.nlgLV43KSw1e_AgyBVFuMQ';
 
 const OrderTracking = ({ orderId }) => {
   const [viewState, setViewState] = useState({
