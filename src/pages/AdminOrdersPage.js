@@ -774,8 +774,46 @@ const AdminOrdersPage = () => {
                       )}
                     </div>
 
-                    {/* Shipping Address */}
-                    {order.shipping_address && (
+                    {/* Customer Information - Only show when order is selected */}
+                    {selectedOrder?.id === order.id && (
+                      <div className="mb-4 p-3 bg-blue-50 rounded text-sm">
+                        <h5 className="font-medium mb-2 text-blue-900">Customer Information</h5>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                          <div>
+                            <p className="text-gray-700">
+                              <span className="font-medium">Name:</span> {order.customer?.first_name || order.customer_info?.first_name || 'N/A'} {order.customer?.last_name || order.customer_info?.last_name || ''}
+                            </p>
+                            <p className="text-gray-700">
+                              <span className="font-medium">Email:</span> {order.customer?.email || order.customer_info?.email || order.guest_email || 'N/A'}
+                            </p>
+                            <p className="text-gray-700">
+                              <span className="font-medium">Username:</span> {order.customer?.username || order.customer_info?.username || 'N/A'}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-gray-700">
+                              <span className="font-medium">Phone:</span> {order.shipping_address?.phone || order.guest_phone || order.customer?.phone_number || 'N/A'}
+                            </p>
+                            <p className="text-gray-700">
+                              <span className="font-medium">Customer ID:</span> {order.customer?.id || order.customer_info?.id || 'Guest'}
+                            </p>
+                            <p className="text-gray-700">
+                              <span className="font-medium">Account Type:</span> {order.customer?.user_type || order.customer_info?.is_registered ? 'Registered' : 'Guest'}
+                            </p>
+                          </div>
+                        </div>
+                        {order.customer?.date_joined && (
+                          <div className="mt-2 pt-2 border-t border-blue-200">
+                            <p className="text-xs text-gray-600">
+                              <span className="font-medium">Member since:</span> {new Date(order.customer.date_joined).toLocaleDateString()}
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Shipping Address - Only show when order is selected */}
+                    {selectedOrder?.id === order.id && order.shipping_address && (
                       <div className="mb-4 p-3 bg-gray-50 rounded text-sm">
                         <h5 className="font-medium mb-2">Shipping Address</h5>
                         <p>{order.shipping_address.first_name} {order.shipping_address.last_name}</p>
@@ -785,6 +823,27 @@ const AdminOrdersPage = () => {
                         )}
                         <p className="text-gray-600">
                           {order.shipping_address.city}, {order.shipping_address.state} {order.shipping_address.postal_code}
+                        </p>
+                        {order.shipping_address.phone && (
+                          <p className="text-gray-600">
+                            <span className="font-medium">Phone:</span> {order.shipping_address.phone}
+                          </p>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Guest Order Information - Only show when order is selected */}
+                    {selectedOrder?.id === order.id && order.is_guest_order && !order.shipping_address && (
+                      <div className="mb-4 p-3 bg-yellow-50 rounded text-sm">
+                        <h5 className="font-medium mb-2 text-yellow-900">Guest Order Information</h5>
+                        <p className="text-gray-700">
+                          <span className="font-medium">Email:</span> {order.guest_email || 'N/A'}
+                        </p>
+                        <p className="text-gray-700">
+                          <span className="font-medium">Phone:</span> {order.guest_phone || 'N/A'}
+                        </p>
+                        <p className="text-gray-600 text-xs mt-2">
+                          Note: This is a guest order. Customer information is limited.
                         </p>
                       </div>
                     )}
@@ -837,56 +896,58 @@ const AdminOrdersPage = () => {
                       </div>
                     </div>
 
-                    {/* Status Update Form */}
-                    <div className="border-t pt-4">
-                      <h4 className="font-medium mb-3">Update Order Status</h4>
-                      <div className="flex space-x-3">
-                        <select
-                          value={statusUpdates[order.id]?.status || ''}
-                          onChange={(e) => setStatusUpdates(prev => ({
-                            ...prev,
-                            [order.id]: {
-                              ...prev[order.id],
-                              status: e.target.value
-                            }
-                          }))}
-                          className="flex-1 border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        >
-                          <option value="">Select Status</option>
-                          {orderStatuses.slice(1).map((status) => (
-                            <option key={status} value={status}>
-                              {status.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                            </option>
-                          ))}
-                        </select>
-                        <input
-                          type="text"
-                          placeholder="Notes (optional)"
-                          value={statusUpdates[order.id]?.notes || ''}
-                          onChange={(e) => setStatusUpdates(prev => ({
-                            ...prev,
-                            [order.id]: {
-                              ...prev[order.id],
-                              notes: e.target.value
-                            }
-                          }))}
-                          className="flex-1 border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        />
-                        <button
-                          onClick={() => updateOrderStatus(order.id)}
-                          disabled={!statusUpdates[order.id]?.status}
-                          className={`px-4 py-2 rounded-lg font-medium transition-colors ${statusUpdates[order.id]?.status
-                            ? 'bg-blue-600 text-white hover:bg-blue-700'
-                            : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                            }`}
-                        >
-                          Update
-                        </button>
+                    {/* Status Update Form - Only show when order is selected */}
+                    {selectedOrder?.id === order.id && (
+                      <div className="border-t pt-4">
+                        <h4 className="font-medium mb-3">Update Order Status</h4>
+                        <div className="flex space-x-3">
+                          <select
+                            value={statusUpdates[order.id]?.status || ''}
+                            onChange={(e) => setStatusUpdates(prev => ({
+                              ...prev,
+                              [order.id]: {
+                                ...prev[order.id],
+                                status: e.target.value
+                              }
+                            }))}
+                            className="flex-1 border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          >
+                            <option value="">Select Status</option>
+                            {orderStatuses.slice(1).map((status) => (
+                              <option key={status} value={status}>
+                                {status.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                              </option>
+                            ))}
+                          </select>
+                          <input
+                            type="text"
+                            placeholder="Notes (optional)"
+                            value={statusUpdates[order.id]?.notes || ''}
+                            onChange={(e) => setStatusUpdates(prev => ({
+                              ...prev,
+                              [order.id]: {
+                                ...prev[order.id],
+                                notes: e.target.value
+                              }
+                            }))}
+                            className="flex-1 border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          />
+                          <button
+                            onClick={() => updateOrderStatus(order.id)}
+                            disabled={!statusUpdates[order.id]?.status}
+                            className={`px-4 py-2 rounded-lg font-medium transition-colors ${statusUpdates[order.id]?.status
+                              ? 'bg-blue-600 text-white hover:bg-blue-700'
+                              : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                              }`}
+                          >
+                            Update
+                          </button>
+                        </div>
                       </div>
-                    </div>
+                    )}
 
-                    {/* Status Timeline */}
-                    {Array.isArray(order.status_history) && order.status_history.length > 0 && (
+                    {/* Status Timeline - Only show when order is selected */}
+                    {selectedOrder?.id === order.id && Array.isArray(order.status_history) && order.status_history.length > 0 && (
                       <div className="mt-4">
                         <h5 className="font-medium mb-2">Order Timeline</h5>
                         <div className="space-y-2">

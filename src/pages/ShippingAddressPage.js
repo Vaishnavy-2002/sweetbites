@@ -295,9 +295,6 @@ const ShippingAddressPage = () => {
     // Validation
     if (cartItems.length === 0) {
       console.log('❌ Cart validation failed - cart is empty');
-      console.log('❌ But checking localStorage for cart data...');
-      const savedCart = localStorage.getItem('sweetbite-cart');
-      console.log('❌ localStorage cart:', savedCart);
       setError('Your cart is empty. Please add items to your cart first.');
       return;
     }

@@ -35,10 +35,20 @@ const ProfileDropdown = () => {
         onClick={() => setIsOpen(!isOpen)}
         className="flex items-center space-x-2 p-2 rounded-lg hover:bg-gray-100 transition-colors"
       >
-        <div className="w-8 h-8 bg-sweetbite-600 rounded-full flex items-center justify-center">
-          <span className="text-white font-semibold text-sm">
-            {user.first_name ? user.first_name[0].toUpperCase() : user.email[0].toUpperCase()}
-          </span>
+        <div className="w-8 h-8 rounded-full flex items-center justify-center overflow-hidden">
+          {user.profile_picture ? (
+            <img
+              src={user.profile_picture}
+              alt="Profile"
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            <div className="w-full h-full bg-sweetbite-600 flex items-center justify-center">
+              <span className="text-white font-semibold text-sm">
+                {user.first_name ? user.first_name[0].toUpperCase() : user.email[0].toUpperCase()}
+              </span>
+            </div>
+          )}
         </div>
         <span className="hidden lg:block text-gray-700 font-medium text-sm">
           {user.first_name || user.email}

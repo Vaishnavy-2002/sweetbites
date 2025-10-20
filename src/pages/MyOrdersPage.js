@@ -60,6 +60,45 @@ const MyOrdersPage = () => {
     orderFrequency: 0
   });
 
+  // Contact Support handler
+  const handleContactSupport = () => {
+    console.log('📞 Contact Support button clicked');
+
+    const supportEmail = 'manomega@gmail.com';
+    const subject = 'SweetBites - Customer Support Inquiry';
+    const customerName = user?.first_name || user?.username || 'Valued Customer';
+    const body = `Dear SweetBites Support Team,
+
+I hope this email finds you well. I am writing to inquire about my order(s) and would appreciate your assistance.
+
+Customer Information:
+- Name: ${customerName}
+- Email: ${user?.email || 'Not provided'}
+
+Order Inquiry:
+Please provide details about your specific question or concern regarding your order(s).
+
+Thank you for your time and assistance.
+
+Best regards,
+${customerName}`;
+
+    try {
+      // Open default email client
+      const mailtoLink = `mailto:${supportEmail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+      console.log('📧 Opening email client with link:', mailtoLink);
+
+      window.open(mailtoLink, '_blank');
+
+      // Show success message
+      alert(`✅ Email client opened successfully!\n\nRecipient: SweetBites Support Team\nEmail: ${supportEmail}\n\nPlease send your message from your default email application.`);
+      console.log('✅ Email client opened successfully');
+    } catch (error) {
+      console.error('❌ Error opening email client:', error);
+      alert(`❌ Failed to open email client!\n\nError: ${error.message}\n\nYou can manually send an email to: ${supportEmail}`);
+    }
+  };
+
   // Helper: For each order, check if feedback exists and set has_feedback accordingly
   const enrichOrdersWithFeedback = async (ordersList) => {
     try {
@@ -1270,7 +1309,10 @@ const MyOrdersPage = () => {
                     <p className="text-sm text-blue-700 mb-3">
                       If you have questions about your order, contact our customer support.
                     </p>
-                    <button className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors text-sm">
+                    <button
+                      onClick={handleContactSupport}
+                      className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors text-sm"
+                    >
                       Contact Support
                     </button>
                   </div>

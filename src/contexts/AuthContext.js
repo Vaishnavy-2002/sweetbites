@@ -234,6 +234,38 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const updateProfileWithFile = async (formData) => {
+    try {
+      console.log('🔄 AuthContext: Updating profile with file data');
+      console.log('🔑 AuthContext: Using token:', token ? `${token.substring(0, 20)}...` : 'No token');
+
+      const response = await fetch('http://localhost:8000/api/users/profile/update/', {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Token ${token}`
+          // Don't set Content-Type for FormData, let browser set it with boundary
+        },
+        body: formData
+      });
+
+      console.log('📡 AuthContext: Profile update with file response status:', response.status);
+
+      if (response.ok) {
+        const updatedUser = await response.json();
+        console.log('✅ AuthContext: Profile updated successfully with file:', updatedUser);
+        setUser(updatedUser);
+        return { success: true };
+      } else {
+        const errorData = await response.json();
+        console.log('❌ AuthContext: Profile update with file error:', errorData);
+        return { success: false, error: errorData.message || 'Profile update failed' };
+      }
+    } catch (error) {
+      console.error('💥 AuthContext: Profile update with file error:', error);
+      return { success: false, error: 'Network error occurred' };
+    }
+  };
+
   const value = {
     user,
     loading,
@@ -242,6 +274,7 @@ export const AuthProvider = ({ children }) => {
     register,
     logout,
     updateProfile,
+    updateProfileWithFile,
     isAuthenticated: !!user
   };
 

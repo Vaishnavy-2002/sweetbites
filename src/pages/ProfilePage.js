@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
-import { useAuth } from '../contexts/AuthContext';
 import { motion } from 'framer-motion';
+import React, { useEffect, useState } from 'react';
+import { useAuth } from '../contexts/AuthContext';
 
 const ProfilePage = () => {
-  const { user, updateProfile } = useAuth();
+  const { user, updateProfile, updateProfileWithFile } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -14,6 +14,8 @@ const ProfilePage = () => {
     email: user?.email || '',
     phone_number: user?.phone_number || ''
   });
+  const [profilePicture, setProfilePicture] = useState(null);
+  const [profilePicturePreview, setProfilePicturePreview] = useState(user?.profile_picture || null);
 
   // Update formData when user data changes
   useEffect(() => {
@@ -24,6 +26,7 @@ const ProfilePage = () => {
       email: user?.email || '',
       phone_number: user?.phone_number || ''
     });
+    setProfilePicturePreview(user?.profile_picture || null);
   }, [user]);
 
   const handleInputChange = (e) => {
@@ -33,6 +36,38 @@ const ProfilePage = () => {
     });
   };
 
+  const handleProfilePictureChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        setError('Please select a valid image file');
+        return;
+      }
+
+      // Validate file size (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        setError('Image size must be less than 5MB');
+        return;
+      }
+
+      setProfilePicture(file);
+
+      // Create preview URL
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setProfilePicturePreview(e.target.result);
+      };
+      reader.readAsDataURL(file);
+      setError('');
+    }
+  };
+
+  const removeProfilePicture = () => {
+    setProfilePicture(null);
+    setProfilePicturePreview(null);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -40,14 +75,31 @@ const ProfilePage = () => {
     setSuccess('');
 
     console.log('🔄 Submitting profile update with data:', formData);
+    console.log('📸 Profile picture:', profilePicture);
 
     try {
-      const result = await updateProfile(formData);
+      let result;
+
+      if (profilePicture) {
+        // Use FormData for file upload
+        const formDataToSend = new FormData();
+        formDataToSend.append('first_name', formData.first_name);
+        formDataToSend.append('last_name', formData.last_name);
+        formDataToSend.append('phone_number', formData.phone_number);
+        formDataToSend.append('profile_picture', profilePicture);
+
+        result = await updateProfileWithFile(formDataToSend);
+      } else {
+        // Use regular JSON for text-only updates
+        result = await updateProfile(formData);
+      }
+
       console.log('📋 Update result:', result);
-      
+
       if (result.success) {
         setSuccess('Profile updated successfully!');
         setIsEditing(false);
+        setProfilePicture(null); // Clear the file after successful upload
         console.log('✅ Profile update successful!');
       } else {
         setError(result.error);
@@ -68,6 +120,8 @@ const ProfilePage = () => {
       email: user?.email || '',
       phone_number: user?.phone_number || ''
     });
+    setProfilePicture(null);
+    setProfilePicturePreview(user?.profile_picture || null);
     setIsEditing(false);
     setError('');
     setSuccess('');
@@ -128,9 +182,8 @@ const ProfilePage = () => {
                   value={formData.first_name}
                   onChange={handleInputChange}
                   disabled={!isEditing}
-                  className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-sweetbite-500 ${
-                    isEditing ? 'border-gray-300' : 'border-gray-200 bg-gray-50'
-                  }`}
+                  className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-sweetbite-500 ${isEditing ? 'border-gray-300' : 'border-gray-200 bg-gray-50'
+                    }`}
                 />
               </div>
 
@@ -144,9 +197,8 @@ const ProfilePage = () => {
                   value={formData.last_name}
                   onChange={handleInputChange}
                   disabled={!isEditing}
-                  className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-sweetbite-500 ${
-                    isEditing ? 'border-gray-300' : 'border-gray-200 bg-gray-50'
-                  }`}
+                  className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-sweetbite-500 ${isEditing ? 'border-gray-300' : 'border-gray-200 bg-gray-50'
+                    }`}
                 />
               </div>
             </div>
@@ -161,9 +213,8 @@ const ProfilePage = () => {
                 value={formData.email}
                 onChange={handleInputChange}
                 disabled={!isEditing}
-                className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-sweetbite-500 ${
-                  isEditing ? 'border-gray-300' : 'border-gray-200 bg-gray-50'
-                }`}
+                className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-sweetbite-500 ${isEditing ? 'border-gray-300' : 'border-gray-200 bg-gray-50'
+                  }`}
               />
             </div>
 
@@ -177,10 +228,61 @@ const ProfilePage = () => {
                 value={formData.phone_number}
                 onChange={handleInputChange}
                 disabled={!isEditing}
-                className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-sweetbite-500 ${
-                  isEditing ? 'border-gray-300' : 'border-gray-200 bg-gray-50'
-                }`}
+                className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-sweetbite-500 ${isEditing ? 'border-gray-300' : 'border-gray-200 bg-gray-50'
+                  }`}
               />
+            </div>
+
+            {/* Profile Picture Section */}
+            <div className="col-span-full">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Profile Picture
+              </label>
+              <div className="flex items-center space-x-4">
+                {/* Profile Picture Preview */}
+                <div className="relative">
+                  {profilePicturePreview ? (
+                    <img
+                      src={profilePicturePreview}
+                      alt="Profile preview"
+                      className="w-20 h-20 rounded-full object-cover border-2 border-gray-300"
+                    />
+                  ) : (
+                    <div className="w-20 h-20 bg-sweetbite-600 rounded-full flex items-center justify-center">
+                      <span className="text-white font-semibold text-xl">
+                        {user?.first_name ? user.first_name[0].toUpperCase() : user?.email[0].toUpperCase()}
+                      </span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Upload Controls */}
+                <div className="flex-1">
+                  {isEditing ? (
+                    <div className="space-y-2">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleProfilePictureChange}
+                        className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-sweetbite-50 file:text-sweetbite-700 hover:file:bg-sweetbite-100"
+                      />
+                      {profilePicturePreview && (
+                        <button
+                          type="button"
+                          onClick={removeProfilePicture}
+                          className="text-sm text-red-600 hover:text-red-800"
+                        >
+                          Remove picture
+                        </button>
+                      )}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-gray-500">
+                      {profilePicturePreview ? 'Profile picture uploaded' : 'No profile picture'}
+                    </p>
+                  )}
+                </div>
+              </div>
             </div>
 
             {isEditing && (

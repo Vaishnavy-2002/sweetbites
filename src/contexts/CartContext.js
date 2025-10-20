@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useEffect, useReducer } from 'react';
+import { useAuth } from './AuthContext';
 
 const CartContext = createContext();
 
@@ -72,28 +73,115 @@ const cartReducer = (state, action) => {
 };
 
 export const CartProvider = ({ children }) => {
+  const { user, isAuthenticated } = useAuth();
   const [state, dispatch] = useReducer(cartReducer, {
     items: []
   });
 
-  // Load cart from localStorage
+  // Get cart storage key based on user authentication status
+  const getCartKey = () => {
+    if (isAuthenticated && user) {
+      return `sweetbite-cart-user-${user.id}`;
+    } else {
+      return 'sweetbite-cart-guest';
+    }
+  };
+
+  // Handle cart loading and migration when user changes
   useEffect(() => {
-    const savedCart = localStorage.getItem('sweetbite-cart');
-    if (savedCart) {
-      try {
-        const parsedCart = JSON.parse(savedCart);
-        dispatch({ type: 'LOAD_CART', payload: parsedCart });
-      } catch (error) {
-        console.error('Error loading cart from localStorage:', error);
-        localStorage.removeItem('sweetbite-cart');
+    console.log('🛒 User/auth state changed:', { user: user?.id, isAuthenticated });
+
+    if (isAuthenticated && user) {
+      // User is logged in - handle migration and loading
+      const guestCartKey = 'sweetbite-cart-guest';
+      const userCartKey = `sweetbite-cart-user-${user.id}`;
+
+      const guestCart = localStorage.getItem(guestCartKey);
+      const userCart = localStorage.getItem(userCartKey);
+
+      if (guestCart && !userCart) {
+        // Migrate guest cart to user cart
+        console.log('🛒 Migrating guest cart to user cart');
+        localStorage.setItem(userCartKey, guestCart);
+        localStorage.removeItem(guestCartKey);
+
+        try {
+          const parsedGuestCart = JSON.parse(guestCart);
+          dispatch({ type: 'LOAD_CART', payload: parsedGuestCart });
+        } catch (error) {
+          console.error('Error migrating guest cart:', error);
+          dispatch({ type: 'CLEAR_CART' });
+        }
+      } else if (guestCart && userCart) {
+        // Merge guest cart with existing user cart
+        console.log('🛒 Merging guest cart with existing user cart');
+        try {
+          const parsedGuestCart = JSON.parse(guestCart);
+          const parsedUserCart = JSON.parse(userCart);
+
+          // Add guest cart items to user cart
+          parsedGuestCart.forEach(guestItem => {
+            const existingItem = parsedUserCart.find(userItem =>
+              userItem.id === guestItem.id &&
+              JSON.stringify(userItem.customizations) === JSON.stringify(guestItem.customizations)
+            );
+
+            if (existingItem) {
+              existingItem.quantity += guestItem.quantity;
+            } else {
+              parsedUserCart.push(guestItem);
+            }
+          });
+
+          localStorage.setItem(userCartKey, JSON.stringify(parsedUserCart));
+          localStorage.removeItem(guestCartKey);
+          dispatch({ type: 'LOAD_CART', payload: parsedUserCart });
+        } catch (error) {
+          console.error('Error merging carts:', error);
+          dispatch({ type: 'CLEAR_CART' });
+        }
+      } else if (userCart) {
+        // Load existing user cart
+        console.log('🛒 Loading existing user cart');
+        try {
+          const parsedUserCart = JSON.parse(userCart);
+          dispatch({ type: 'LOAD_CART', payload: parsedUserCart });
+        } catch (error) {
+          console.error('Error loading user cart:', error);
+          dispatch({ type: 'CLEAR_CART' });
+        }
+      } else {
+        // No cart found for user
+        console.log('🛒 No cart found for user, clearing current cart');
+        dispatch({ type: 'CLEAR_CART' });
+      }
+    } else {
+      // User is not logged in - load guest cart
+      const guestCartKey = 'sweetbite-cart-guest';
+      const guestCart = localStorage.getItem(guestCartKey);
+
+      if (guestCart) {
+        console.log('🛒 Loading guest cart');
+        try {
+          const parsedGuestCart = JSON.parse(guestCart);
+          dispatch({ type: 'LOAD_CART', payload: parsedGuestCart });
+        } catch (error) {
+          console.error('Error loading guest cart:', error);
+          dispatch({ type: 'CLEAR_CART' });
+        }
+      } else {
+        console.log('🛒 No guest cart found, clearing current cart');
+        dispatch({ type: 'CLEAR_CART' });
       }
     }
-  }, []);
+  }, [user, isAuthenticated]);
 
-  // Save cart to localStorage
+  // Save cart to localStorage when items change
   useEffect(() => {
-    localStorage.setItem('sweetbite-cart', JSON.stringify(state.items));
-  }, [state.items]);
+    const cartKey = getCartKey();
+    console.log('🛒 Saving cart for key:', cartKey, 'items:', state.items);
+    localStorage.setItem(cartKey, JSON.stringify(state.items));
+  }, [state.items, user, isAuthenticated]);
 
   const addItem = (item, quantity = 1) => {
     console.log('🛒 addItem called with:', item, 'quantity:', quantity);
@@ -160,6 +248,7 @@ export const CartProvider = ({ children }) => {
   const getCartItems = () => {
     return state.items;
   };
+
 
   return (
     <CartContext.Provider value={{

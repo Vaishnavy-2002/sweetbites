@@ -481,8 +481,8 @@ const CakeDetailPage = () => {
   const { addItem } = useCart();
   const { isAuthenticated } = useAuth();
 
-  // Default to cake ID 9 if no cakeId is provided (for /customize route)
-  const actualCakeId = cakeId || '9';
+  // Default to cake ID 6 (Chocolate Cakes) if no cakeId is provided (for /customize route)
+  const actualCakeId = cakeId || '6';
 
   const [cake, setCake] = useState(null);
   const [cakes, setCakes] = useState([]);
@@ -577,10 +577,15 @@ const CakeDetailPage = () => {
         console.log('Using fallback cake data:', foundCake);
         setCake(foundCake);
         setTotalPrice(Number(foundCake.price) || 0);
+      } else if (cakes.length > 0) {
+        // If the specific cake is not found, use the first available cake
+        console.log('Using first available cake as fallback:', cakes[0]);
+        setCake(cakes[0]);
+        setTotalPrice(Number(cakes[0].price) || 0);
       }
       setLoading(false);
     }
-  }, [actualCakeId]);
+  }, [actualCakeId, cakes]);
 
   const fetchReviews = useCallback(async () => {
     try {

@@ -45,14 +45,23 @@ const OrderSuccessPage = () => {
   const loadExistingFeedback = async (orderId) => {
     try {
       const token = localStorage.getItem('token');
-      if (!token) return;
+      if (!token) {
+        console.log('🔓 No token available, skipping feedback load');
+        return;
+      }
+
+      const headers = {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      };
+
+      // Only add Authorization header if token exists and is valid
+      if (token && token.trim()) {
+        headers['Authorization'] = `Token ${token}`;
+      }
 
       const response = await fetch(`http://localhost:8000/api/feedback/order/${orderId}/`, {
-        headers: {
-          'Authorization': `Token ${token}`,
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        }
+        headers: headers
       });
 
       if (response.ok) {
@@ -62,6 +71,10 @@ const OrderSuccessPage = () => {
       } else if (response.status === 404) {
         setExistingFeedback(null);
         setFeedbackSubmitted(false);
+      } else if (response.status === 401) {
+        console.log('🔐 Authentication error in feedback load, clearing invalid token');
+        localStorage.removeItem('token');
+        setExistingFeedback(null);
       }
     } catch (error) {
       console.error('Error loading existing feedback:', error);
@@ -71,6 +84,32 @@ const OrderSuccessPage = () => {
 
   useEffect(() => {
     console.log('OrderSuccessPage useEffect - location.state:', location.state);
+
+    // Check if token is valid on page load
+    const checkTokenValidity = async () => {
+      const token = localStorage.getItem('token');
+      if (token) {
+        try {
+          const response = await fetch('http://localhost:8000/api/users/profile/', {
+            headers: {
+              'Authorization': `Token ${token}`,
+              'Content-Type': 'application/json',
+              'Accept': 'application/json'
+            }
+          });
+
+          if (!response.ok) {
+            console.log('🔐 Invalid token detected, clearing from localStorage');
+            localStorage.removeItem('token');
+          }
+        } catch (error) {
+          console.log('🔐 Token validation error, clearing from localStorage');
+          localStorage.removeItem('token');
+        }
+      }
+    };
+
+    checkTokenValidity();
 
     if (!location.state) {
       console.log('No location.state found, redirecting to home');
@@ -109,6 +148,17 @@ const OrderSuccessPage = () => {
             'Content-Type': 'application/json'
           }
         });
+
+        // If token is invalid, try without token
+        if (response.status === 401) {
+          console.log('🔐 Order API token invalid, retrying without token');
+          localStorage.removeItem('token');
+          response = await fetch(`http://localhost:8000/api/orders/orders/${location.state.orderId}/`, {
+            headers: {
+              'Content-Type': 'application/json'
+            }
+          });
+        }
       } else {
         // Guest user - no token needed for guest orders
         response = await fetch(`http://localhost:8000/api/orders/orders/${location.state.orderId}/`, {
@@ -171,29 +221,81 @@ const OrderSuccessPage = () => {
     setFeedbackError('');
 
     try {
+      const token = localStorage.getItem('token');
+      console.log('🔑 Token available:', !!token);
+      console.log('📝 Feedback data:', feedbackData);
+      console.log('📦 Order ID:', order?.id);
+
+      // Check if order ID is valid
+      if (!order?.id) {
+        setFeedbackError('Order information is missing. Please refresh the page and try again.');
+        setIsSubmittingFeedback(false);
+        return;
+      }
+
+      const requestBody = {
+        ...feedbackData,
+        order: order?.id
+      };
+      console.log('📤 Request body:', requestBody);
+      console.log('📦 Order object:', order);
+      console.log('🆔 Order ID being sent:', order?.id);
+
+      // Prepare headers
+      const headers = {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      };
+
+      // Only add Authorization header if token exists and is valid
+      if (token && token.trim()) {
+        headers['Authorization'] = `Token ${token}`;
+        console.log('🔐 Using authentication token');
+      } else {
+        console.log('🔓 No token, submitting as anonymous');
+      }
+
       const response = await fetch('http://localhost:8000/api/feedback/', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Token ${localStorage.getItem('token')}`,
-        },
-        body: JSON.stringify({
-          ...feedbackData,
-          order_id: order?.id
-        }),
+        headers: headers,
+        body: JSON.stringify(requestBody),
       });
+
+      console.log('📡 Response status:', response.status);
+      console.log('📡 Response ok:', response.ok);
 
       if (response.ok) {
         const result = await response.json();
+        console.log('✅ Feedback submitted successfully:', result);
         setFeedbackSubmitted(true);
         setShowFeedback(false);
-        setExistingFeedback(result.data);
+        setExistingFeedback(result);
         setIsEditingFeedback(false);
       } else {
         const errorData = await response.json();
-        setFeedbackError(errorData.message || 'Failed to submit feedback. Please try again.');
+        console.error('❌ Feedback submission error:', errorData);
+
+        // Handle authentication errors
+        if (response.status === 401) {
+          console.log('🔐 Authentication error, clearing invalid token');
+          localStorage.removeItem('token');
+          setFeedbackError('Your session has expired. Please refresh the page and try again.');
+        }
+        // Handle specific error cases
+        else if (errorData.code === 'DUPLICATE_FEEDBACK') {
+          setFeedbackError('You have already submitted feedback for this order.');
+        } else if (errorData.message && Array.isArray(errorData.message)) {
+          setFeedbackError(errorData.message.join(', '));
+        } else if (typeof errorData === 'object' && !errorData.error && !errorData.message) {
+          // Handle field validation errors
+          const fieldErrors = Object.values(errorData).flat();
+          setFeedbackError(fieldErrors.join(', '));
+        } else {
+          setFeedbackError(errorData.error || errorData.message || errorData.detail || 'Failed to submit feedback. Please try again.');
+        }
       }
     } catch (err) {
+      console.error('💥 Feedback submission error:', err);
       setFeedbackError('Network error. Please check your connection and try again.');
     } finally {
       setIsSubmittingFeedback(false);
@@ -221,13 +323,19 @@ const OrderSuccessPage = () => {
       console.log('🗑️ Deleting feedback:', existingFeedback.id);
       console.log('🔗 Delete URL:', `http://localhost:8000/api/feedback/${existingFeedback.id}/`);
 
+      const headers = {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      };
+
+      // Only add Authorization header if token exists and is valid
+      if (token && token.trim()) {
+        headers['Authorization'] = `Token ${token}`;
+      }
+
       const response = await fetch(`http://localhost:8000/api/feedback/${existingFeedback.id}/`, {
         method: 'DELETE',
-        headers: {
-          'Authorization': `Token ${token}`,
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        }
+        headers: headers
       });
 
       console.log('📡 Delete response status:', response.status);
@@ -242,7 +350,15 @@ const OrderSuccessPage = () => {
       } else {
         const errorData = await response.json().catch(() => ({}));
         console.error('❌ Delete failed:', response.status, errorData);
-        setFeedbackError(errorData.message || `Failed to delete feedback. Status: ${response.status}`);
+
+        // Handle authentication errors
+        if (response.status === 401) {
+          console.log('🔐 Authentication error in delete, clearing invalid token');
+          localStorage.removeItem('token');
+          setFeedbackError('Your session has expired. Please refresh the page and try again.');
+        } else {
+          setFeedbackError(errorData.message || `Failed to delete feedback. Status: ${response.status}`);
+        }
       }
     } catch (error) {
       console.error('❌ Error deleting feedback:', error);

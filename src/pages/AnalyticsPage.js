@@ -1,8 +1,6 @@
 import {
     ArrowLeftIcon,
-    ArrowTrendingUpIcon,
     ChartBarIcon,
-    CurrencyDollarIcon,
     ExclamationTriangleIcon,
     EyeIcon,
     FireIcon,
@@ -21,10 +19,6 @@ const AnalyticsPage = () => {
     const [salesData, setSalesData] = useState({
         topCakes: [],
         lowPerformers: [],
-        totalRevenue: 0,
-        totalOrders: 0,
-        totalSales: 0,
-        averageProfitMargin: 0,
         topPerformer: 'N/A',
         period: 'month',
         dateRange: {}
@@ -73,10 +67,6 @@ const AnalyticsPage = () => {
                 const salesData = {
                     topCakes: data.top_cakes || [],
                     lowPerformers: data.low_performers || [],
-                    totalRevenue: data.summary.total_revenue || 0,
-                    totalOrders: data.summary.total_orders || 0,
-                    totalSales: data.summary.total_sales || 0,
-                    averageProfitMargin: data.summary.average_profit_margin || 0,
                     topPerformer: data.summary.top_performer || 'N/A',
                     period: data.summary.period || 'month',
                     dateRange: data.summary.date_range || {}
@@ -93,10 +83,6 @@ const AnalyticsPage = () => {
             const emptyData = {
                 topCakes: [],
                 lowPerformers: [],
-                totalRevenue: 0,
-                totalOrders: 0,
-                totalSales: 0,
-                averageProfitMargin: 0,
                 topPerformer: 'N/A',
                 period: selectedPeriod,
                 dateRange: {}
@@ -154,13 +140,39 @@ const AnalyticsPage = () => {
     const handleDeleteCake = async (cakeId) => {
         if (window.confirm('Are you sure you want to delete this cake? This action cannot be undone.')) {
             try {
-                await api.delete(`/api/cakes/${cakeId}/`);
+                console.log('🗑️ Attempting to delete cake with ID:', cakeId);
+
+                const token = localStorage.getItem('token');
+                if (!token) {
+                    throw new Error('No authentication token found');
+                }
+
+                console.log('🔑 Token found:', token.substring(0, 10) + '...');
+
+                const response = await fetch(`http://localhost:8000/api/admin/cakes/${cakeId}/`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Token ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                console.log('📡 Delete response status:', response.status);
+                console.log('📡 Delete response headers:', response.headers);
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    console.error('❌ Delete error response:', errorData);
+                    throw new Error(errorData.detail || errorData.error || `HTTP error! status: ${response.status}`);
+                }
+
+                console.log('✅ Cake deleted successfully');
                 alert('Cake deleted successfully!');
                 // Refresh data to show updated information
                 loadSalesData();
             } catch (err) {
-                console.error('Error deleting cake:', err);
-                alert('Failed to delete cake. Please try again.');
+                console.error('❌ Error deleting cake:', err);
+                alert(`Failed to delete cake: ${err.message}`);
             }
         }
     };
@@ -235,57 +247,6 @@ const AnalyticsPage = () => {
                     </div>
                 ) : (
                     <div className="space-y-8">
-                        {/* Summary Cards */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                            <div className="bg-white rounded-lg shadow-md p-6">
-                                <div className="flex items-center">
-                                    <div className="p-3 bg-green-100 rounded-lg">
-                                        <CurrencyDollarIcon className="h-6 w-6 text-green-600" />
-                                    </div>
-                                    <div className="ml-4">
-                                        <p className="text-sm font-medium text-gray-600">Total Revenue</p>
-                                        <p className="text-2xl font-semibold text-gray-900">{formatCurrency(salesData.totalRevenue)}</p>
-                                        <p className="text-xs text-gray-500">This {salesData.period}</p>
-                                    </div>
-                                </div>
-                            </div>
-                            <div className="bg-white rounded-lg shadow-md p-6">
-                                <div className="flex items-center">
-                                    <div className="p-3 bg-blue-100 rounded-lg">
-                                        <ChartBarIcon className="h-6 w-6 text-blue-600" />
-                                    </div>
-                                    <div className="ml-4">
-                                        <p className="text-sm font-medium text-gray-600">Total Orders</p>
-                                        <p className="text-2xl font-semibold text-gray-900">{salesData.totalOrders}</p>
-                                        <p className="text-xs text-gray-500">Completed orders</p>
-                                    </div>
-                                </div>
-                            </div>
-                            <div className="bg-white rounded-lg shadow-md p-6">
-                                <div className="flex items-center">
-                                    <div className="p-3 bg-indigo-100 rounded-lg">
-                                        <ArrowTrendingUpIcon className="h-6 w-6 text-indigo-600" />
-                                    </div>
-                                    <div className="ml-4">
-                                        <p className="text-sm font-medium text-gray-600">Total Sales</p>
-                                        <p className="text-2xl font-semibold text-gray-900">{salesData.totalSales}</p>
-                                        <p className="text-xs text-gray-500">Items sold</p>
-                                    </div>
-                                </div>
-                            </div>
-                            <div className="bg-white rounded-lg shadow-md p-6">
-                                <div className="flex items-center">
-                                    <div className="p-3 bg-purple-100 rounded-lg">
-                                        <ArrowTrendingUpIcon className="h-6 w-6 text-purple-600" />
-                                    </div>
-                                    <div className="ml-4">
-                                        <p className="text-sm font-medium text-gray-600">Avg Profit Margin</p>
-                                        <p className="text-2xl font-semibold text-gray-900">{salesData.averageProfitMargin}%</p>
-                                        <p className="text-xs text-gray-500">Across all products</p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
 
                         {/* Top Performer Card */}
                         <div className="bg-gradient-to-r from-yellow-50 to-orange-50 rounded-lg shadow-md p-6 border border-yellow-200">
@@ -296,16 +257,16 @@ const AnalyticsPage = () => {
                                 <div className="ml-4">
                                     <p className="text-sm font-medium text-gray-600">Top Performer</p>
                                     <p className="text-xl font-semibold text-gray-900">{salesData.topPerformer}</p>
-                                    <p className="text-xs text-gray-500">Best selling product this {salesData.period}</p>
+                                    <p className="text-xs text-gray-500">Cake with most sales this {salesData.period}</p>
                                 </div>
                             </div>
                         </div>
 
-                        {/* Top 5 Cakes Bar Chart */}
+                        {/* All Cakes Bar Chart */}
                         <div className="bg-white rounded-lg shadow-md p-6">
                             <div className="flex items-center justify-between mb-6">
                                 <h3 className="text-lg font-semibold text-gray-900">
-                                    Top 5 Cakes This {salesData.period === 'week' ? 'Week' : salesData.period === 'year' ? 'Year' : 'Month'}
+                                    All Cakes This {salesData.period === 'week' ? 'Week' : salesData.period === 'year' ? 'Year' : 'Month'} (Lowest to Highest Sales)
                                 </h3>
                                 <div className="flex items-center space-x-2 text-sm text-gray-600">
                                     <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
@@ -353,7 +314,7 @@ const AnalyticsPage = () => {
                                     <h3 className="text-lg font-semibold text-gray-900">Low Performer Alerts</h3>
                                 </div>
                                 <span className="text-sm text-gray-500">
-                                    Products with sales &lt; 5 this {salesData.period}
+                                    All products with 0 sales this {salesData.period}
                                 </span>
                             </div>
                             {salesData.lowPerformers.length > 0 ? (
@@ -371,7 +332,7 @@ const AnalyticsPage = () => {
                                                 <div>
                                                     <h4 className="font-medium text-gray-900">{cake.name}</h4>
                                                     <p className="text-sm text-gray-600">
-                                                        {cake.sales} sales • {cake.days_since_last_sale || 0} days since last sale
+                                                        {cake.sales} sales • {cake.days_since_last_sale || 'N/A'} days since last sale
                                                     </p>
                                                     <p className="text-sm text-gray-500">
                                                         Revenue: {formatCurrency(cake.revenue)} • Profit margin: {cake.profit_margin}%
@@ -384,9 +345,6 @@ const AnalyticsPage = () => {
                                                     className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
                                                 >
                                                     Promote
-                                                </button>
-                                                <button className="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium">
-                                                    View Details
                                                 </button>
                                                 <button
                                                     onClick={() => handleDeleteCake(cake.id)}
@@ -401,8 +359,8 @@ const AnalyticsPage = () => {
                             ) : (
                                 <div className="text-center py-8 text-gray-500">
                                     <ExclamationTriangleIcon className="h-12 w-12 text-green-400 mx-auto mb-4" />
-                                    <p className="text-lg font-medium">No Low Performers!</p>
-                                    <p className="text-sm">All products are performing well this {salesData.period}.</p>
+                                    <p className="text-lg font-medium">No Zero-Sales Products!</p>
+                                    <p className="text-sm">All products have been ordered at least once this {salesData.period}.</p>
                                 </div>
                             )}
                         </div>

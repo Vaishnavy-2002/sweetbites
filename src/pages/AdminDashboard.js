@@ -360,7 +360,8 @@ const AdminDashboard = () => {
         email: editingCustomer.email,
         first_name: editingCustomer.first_name,
         last_name: editingCustomer.last_name,
-        user_type: editingCustomer.user_type
+        user_type: editingCustomer.user_type,
+        is_active: editingCustomer.is_active !== false
       };
 
       console.log('🔄 Updating customer:', editingCustomer.id, updateData);
@@ -495,6 +496,12 @@ const AdminDashboard = () => {
       doc.text(`Average Rating (in range): ${filteredAvg.toFixed(2)}/5.0`, 20, yPosition);
       yPosition += 8;
       doc.text(`Recent Reviews Listed: ${filteredList.length}`, 20, yPosition);
+      yPosition += 8;
+
+      // Calculate registered vs guest feedback breakdown
+      const registeredCount = filteredList.filter(fb => fb.user_info?.is_registered).length;
+      const guestCount = filteredList.length - registeredCount;
+      doc.text(`Registered Users: ${registeredCount} | Guest Users: ${guestCount}`, 20, yPosition);
       yPosition += 15;
 
       // Rating distribution
@@ -522,10 +529,24 @@ const AdminDashboard = () => {
         filteredList.slice(0, 15).forEach((feedback, index) => {
           const comment = feedback.comment || feedback.message || 'No comment';
           const shortComment = comment.length > 60 ? comment.substring(0, 60) + '...' : comment;
-          const customerName = feedback.customer?.username || feedback.customer?.first_name || 'Anonymous';
+
+          // Get customer name with proper distinction between registered and guest users
+          let customerName = 'Anonymous';
+          let userType = 'Guest';
+
+          if (feedback.user_info) {
+            if (feedback.user_info.is_registered) {
+              customerName = feedback.user_info.display_name || feedback.user_info.username || feedback.user_info.email || 'Registered User';
+              userType = 'Registered';
+            } else {
+              customerName = 'Anonymous';
+              userType = 'Guest';
+            }
+          }
+
           const rating = feedback.rating || 'N/A';
 
-          doc.text(`${index + 1}. ${customerName} - ${rating} stars`, 20, yPosition);
+          doc.text(`${index + 1}. ${customerName} (${userType}) - ${rating} stars`, 20, yPosition);
           yPosition += 5;
           doc.text(`   "${shortComment}"`, 20, yPosition);
           yPosition += 8;
@@ -1199,6 +1220,8 @@ const AdminDashboard = () => {
                                   <span>Username: {customer.username || 'N/A'}</span>
                                   <span>•</span>
                                   <span>ID: {customer.id}</span>
+                                  <span>•</span>
+                                  <span className="font-medium text-blue-600">Orders: {customer.total_orders || 0}</span>
                                 </div>
                               </div>
                             </div>
@@ -1549,6 +1572,27 @@ const AdminDashboard = () => {
                   <option value="delivery">Delivery Person</option>
                 </select>
               </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Account Status</label>
+                <div className="flex items-center space-x-3">
+                  <label className="flex items-center">
+                    <input
+                      type="checkbox"
+                      checked={editingCustomer.is_active !== false}
+                      onChange={(e) => setEditingCustomer({ ...editingCustomer, is_active: e.target.checked })}
+                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                    />
+                    <span className="ml-2 text-sm text-gray-700">
+                      {editingCustomer.is_active !== false ? 'Active Account' : 'Inactive Account'}
+                    </span>
+                  </label>
+                </div>
+                <p className="text-xs text-gray-500 mt-1">
+                  {editingCustomer.is_active !== false
+                    ? 'User can log in and access the system'
+                    : 'User account is disabled and cannot log in'}
+                </p>
+              </div>
             </div>
             <div className="flex justify-end space-x-3 mt-6">
               <button
@@ -1633,6 +1677,12 @@ const AdminDashboard = () => {
                         : 'Not available'}
                     </p>
                   </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Total Orders</label>
+                    <p className="text-gray-900 font-semibold text-blue-600">
+                      {selectedCustomer?.total_orders || 0} orders
+                    </p>
+                  </div>
                 </div>
               </div>
 
@@ -1665,10 +1715,37 @@ const AdminDashboard = () => {
                     <label className="block text-sm font-medium text-gray-700">Email</label>
                     <p className="text-gray-900">{selectedCustomer?.email || 'Not provided'}</p>
                   </div>
-                  {selectedCustomer?.phone && (
+                  {selectedCustomer?.phone_number && (
                     <div>
                       <label className="block text-sm font-medium text-gray-700">Phone</label>
-                      <p className="text-gray-900">{selectedCustomer.phone}</p>
+                      <p className="text-gray-900">{selectedCustomer.phone_number}</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Order Information */}
+              <div className="bg-gray-50 rounded-lg p-4">
+                <h4 className="text-lg font-medium text-gray-900 mb-4">Order Information</h4>
+                <div className="space-y-2">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Total Orders</label>
+                    <p className="text-gray-900 font-semibold text-blue-600 text-lg">
+                      {selectedCustomer?.total_orders || 0} orders
+                    </p>
+                  </div>
+                  {selectedCustomer?.total_orders > 0 && (
+                    <div className="mt-3">
+                      <button
+                        onClick={() => {
+                          // Navigate to orders page with customer filter
+                          navigate('/admin/orders', { state: { customerId: selectedCustomer.id } });
+                          setSelectedCustomer(null);
+                        }}
+                        className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm"
+                      >
+                        View Customer Orders
+                      </button>
                     </div>
                   )}
                 </div>

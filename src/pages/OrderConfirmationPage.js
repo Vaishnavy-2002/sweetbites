@@ -482,29 +482,6 @@ const OrderConfirmationPage = () => {
               </div>
             </div>
 
-            {/* Shipping Address */}
-            <div className="bg-white rounded-lg shadow-md p-6">
-              <h2 className="text-xl font-semibold mb-4 flex items-center">
-                <TruckIcon className="h-5 w-5 mr-2" />
-                Delivery Address
-              </h2>
-              <div className="bg-gray-50 p-4 rounded-lg">
-                <p className="font-medium text-gray-900">
-                  {orderPreview?.shipping_address?.first_name || 'N/A'} {orderPreview?.shipping_address?.last_name || ''}
-                </p>
-                <p className="text-gray-600">{orderPreview?.shipping_address?.address_line1 || 'N/A'}</p>
-                {orderPreview?.shipping_address?.address_line2 && (
-                  <p className="text-gray-600">{orderPreview.shipping_address.address_line2}</p>
-                )}
-                <p className="text-gray-600">
-                  {orderPreview?.shipping_address?.city || 'N/A'}, {orderPreview?.shipping_address?.state || 'N/A'} {orderPreview?.shipping_address?.postal_code || 'N/A'}
-                </p>
-                {orderPreview?.shipping_address?.country && (
-                  <p className="text-gray-600">{orderPreview.shipping_address.country}</p>
-                )}
-                <p className="text-gray-600">Phone: {orderPreview?.shipping_address?.phone || 'N/A'}</p>
-              </div>
-            </div>
 
             {/* Error Message */}
             {error && (

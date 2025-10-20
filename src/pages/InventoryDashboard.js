@@ -2224,7 +2224,7 @@ const InventoryDashboard = () => {
 
                       const trendColor = ingredient.trend > 0 ? 'text-green-600' : ingredient.trend < 0 ? 'text-red-600' : 'text-gray-500';
                       const trendIcon = ingredient.trend > 0 ? '▲' : ingredient.trend < 0 ? '▼' : '→';
-                      const trendText = ingredient.trend !== 0 ? `${Math.abs(ingredient.trend).toFixed(1)}% this ${selectedPeriod}` : 'No change';
+                      const trendText = ingredient.trend !== 0 ? `${Math.abs(ingredient.trend).toFixed(1)}% this ${selectedPeriod}` : '';
 
                       return (
                         <div key={ingredient.name} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
@@ -2234,10 +2234,12 @@ const InventoryDashboard = () => {
                           </div>
                           <div className="text-right">
                             <div className="font-bold" style={{ color: color }}>{ingredient.percentage}%</div>
-                            <div className={`text-sm flex items-center ${trendColor}`}>
-                              <span className="mr-1">{trendIcon}</span>
-                              {trendText}
-                            </div>
+                            {trendText && (
+                              <div className={`text-sm flex items-center ${trendColor}`}>
+                                <span className="mr-1">{trendIcon}</span>
+                                {trendText}
+                              </div>
+                            )}
                           </div>
                         </div>
                       );
@@ -2369,8 +2371,6 @@ const InventoryDashboard = () => {
                   <div className="flex space-x-2">
                     {[
                       { key: 'all', label: 'All Ingredients' },
-                      { key: 'low_stock', label: 'Low Stock' },
-                      { key: 'high_value', label: 'High Value' },
                       { key: 'expiring', label: 'Expiring Soon' }
                     ].map((category) => (
                       <button
@@ -2396,10 +2396,6 @@ const InventoryDashboard = () => {
                     <div className="text-center">
                       <div className="text-2xl font-bold text-blue-900">Rs {breakdownData.summary.total_value.toFixed(2)}</div>
                       <div className="text-sm text-blue-700">Total Value</div>
-                    </div>
-                    <div className="text-center">
-                      <div className="text-2xl font-bold text-blue-900">{breakdownData.summary.low_stock_count}</div>
-                      <div className="text-sm text-blue-700">Low Stock</div>
                     </div>
                     <div className="text-center">
                       <div className="text-2xl font-bold text-blue-900">{breakdownData.summary.expiring_count}</div>
@@ -2750,11 +2746,11 @@ const InventoryDashboard = () => {
                     min="0"
                     step="0.01"
                     required
-                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent ${parseFloat(ingredientFormData.current_stock) < 0
+                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${parseFloat(ingredientFormData.current_stock) < 0
                       ? 'border-red-500'
                       : 'border-gray-300'
                       }`}
-                    placeholder="0.00"
+                    placeholder="Enter current stock amount"
                   />
                   {parseFloat(ingredientFormData.current_stock) < 0 && (
                     <p className="text-red-500 text-xs mt-1">Current stock cannot be negative</p>
@@ -2771,11 +2767,11 @@ const InventoryDashboard = () => {
                     min="0"
                     step="0.01"
                     required
-                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent ${parseFloat(ingredientFormData.minimum_stock) < 0
+                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${parseFloat(ingredientFormData.minimum_stock) < 0
                       ? 'border-red-500'
                       : 'border-gray-300'
                       }`}
-                    placeholder="0.00"
+                    placeholder="Enter minimum stock level"
                   />
                   {parseFloat(ingredientFormData.minimum_stock) < 0 && (
                     <p className="text-red-500 text-xs mt-1">Minimum stock cannot be negative</p>
@@ -2792,11 +2788,11 @@ const InventoryDashboard = () => {
                     min="0"
                     step="0.01"
                     required
-                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent ${parseFloat(ingredientFormData.unit_cost) < 0
+                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${parseFloat(ingredientFormData.unit_cost) < 0
                       ? 'border-red-500'
                       : 'border-gray-300'
                       }`}
-                    placeholder="0.00"
+                    placeholder="Enter unit cost"
                   />
                   {parseFloat(ingredientFormData.unit_cost) < 0 && (
                     <p className="text-red-500 text-xs mt-1">Unit cost cannot be negative</p>
@@ -2928,7 +2924,7 @@ const InventoryDashboard = () => {
               <div className="text-sm text-gray-600 mb-4">
                 <p><span className="font-medium">Ingredient:</span> {deductingIngredient.name}</p>
                 <p><span className="font-medium">Current Stock:</span> {deductingIngredient.current_stock} {deductingIngredient.unit}</p>
-                <p><span className="font-medium">Unit Cost:</span> ${parseFloat(deductingIngredient.unit_cost).toFixed(2)}</p>
+                <p><span className="font-medium">Unit Cost:</span> RS {parseFloat(deductingIngredient.unit_cost).toFixed(2)}</p>
               </div>
             </div>
 
@@ -2948,12 +2944,12 @@ const InventoryDashboard = () => {
                     amount: e.target.value
                   })}
                   required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                  placeholder={`Enter amount (max: ${deductingIngredient.current_stock})`}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                  placeholder={`Enter amount to deduct (max: ${deductingIngredient.current_stock})`}
                 />
                 {deductionFormData.amount && parseFloat(deductionFormData.amount) > 0 && (
                   <p className="text-sm text-gray-600 mt-1">
-                    Estimated cost: ${(parseFloat(deductionFormData.amount) * parseFloat(deductingIngredient.unit_cost)).toFixed(2)}
+                    Estimated cost: RS {(parseFloat(deductionFormData.amount) * parseFloat(deductingIngredient.unit_cost)).toFixed(2)}
                   </p>
                 )}
               </div>
