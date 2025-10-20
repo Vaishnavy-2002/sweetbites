@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Frontend API Test</title>
+</head>
+<body>
+    <h1>SweetBite API Test</h1>
+    <button onclick="testAPI()">Test Order API</button>
+    <div id="result"></div>
+
+    <script>
+        async function testAPI() {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = 'Testing...';
+            
+            try {
+                console.log('Testing API call to Django...');
+                
+                // Test the exact same call your React app makes
+                const response = await fetch('http://localhost:8000/api/orders/orders/', {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                console.log('Response status:', response.status);
+                console.log('Response headers:', response.headers);
+                console.log('Content-Type:', response.headers.get('content-type'));
+                
+                const text = await response.text();
+                console.log('Response text:', text.substring(0, 200));
+                
+                if (response.headers.get('content-type')?.includes('application/json')) {
+                    resultDiv.innerHTML = `
+                        <h2>✅ SUCCESS - API Returning JSON</h2>
+                        <p><strong>Status:</strong> ${response.status}</p>
+                        <p><strong>Content-Type:</strong> ${response.headers.get('content-type')}</p>
+                        <p><strong>Response:</strong> ${text.substring(0, 200)}...</p>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `
+                        <h2>🚨 PROBLEM - API Returning HTML</h2>
+                        <p><strong>Status:</strong> ${response.status}</p>
+                        <p><strong>Content-Type:</strong> ${response.headers.get('content-type')}</p>
+                        <p><strong>Response:</strong></p>
+                        <pre>${text.substring(0, 500)}...</pre>
+                    `;
+                }
+                
+            } catch (error) {
+                console.error('API Test Error:', error);
+                resultDiv.innerHTML = `
+                    <h2>❌ ERROR</h2>
+                    <p><strong>Error:</strong> ${error.message}</p>
+                    <p>This might be a CORS issue or Django server not running.</p>
+                `;
+            }
+        }
+    </script>
+</body>
+</html>
